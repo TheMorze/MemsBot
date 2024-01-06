@@ -3,8 +3,9 @@ from aiogram.types import ReplyKeyboardMarkup, \
 
 def get_menu_keyboard() -> ReplyKeyboardMarkup:
     keyboard = [
-        [KeyboardButton('Получить мем'), KeyboardButton('Загрузить мем')],
-        [KeyboardButton('Настройки')]
+        [KeyboardButton(text='Быстрый мем'), KeyboardButton(text='Подобрать мем')],
+        [KeyboardButton(text='Загрузить мем')],
+        [KeyboardButton(text='Настройки')]
     ]
     
     return ReplyKeyboardMarkup(
