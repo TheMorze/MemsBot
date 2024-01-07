@@ -1,7 +1,8 @@
 from loguru import logger
+from typing import Tuple
 
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, \
+                                   AsyncSession
 
 
 from app.database.models import Base, User, Mem
@@ -9,43 +10,48 @@ from app.database.models import Base, User, Mem
 
 class Database:
     
-    __engine = create_engine(url='sqlite+pysqlite:///app/database/database.db', echo=True)
+    __engine = create_async_engine(url='sqlite+aiosqlite:///app/database/database.db', echo=True)
+    __async_session = async_sessionmaker(__engine, expire_on_commit=False)
     
     @classmethod
-    def create_tables(cls):
-        Base.metadata.create_all(cls.__engine)
+    async def create_tables(cls):
+        async with cls.__engine.begin() as conn: 
+            await conn.run_sync(Base.metadata.create_all)
     
     @classmethod
-    def add_user(cls, user_id: int, username: str, fullname: str) -> None:
-        with Session(cls.__engine) as session:
+    async def add_user(cls, user_id: int, username: str, fullname: str) -> Tuple[User, bool]:
+        async with cls.__async_session() as session:
             
-            user = session.get(User, user_id)
+            user = await session.get(User, user_id)
             
             if not user:
-                user = User(id=user_id,
+                in_bd = False
+                user = User(user_id=user_id,
                             username=username,
                             fullname=fullname)
-                
+
                 session.add(user)
-                session.commit()
-            
+                await session.commit()
             else:
+                in_bd = True
                 logger.info('Пользователь уже находится в базе данных!')
+            
+        return (user, in_bd)
 
     @classmethod
-    def add_mem(cls, mem_name: str, user_id: int) -> None:
-        with Session(cls.__engine) as session:
+    async def add_mem(cls, mem_name: str, user_id: int) -> None:
+        async with cls.__async_session() as session:
             mem = Mem(mem_name=mem_name,
                       user_id=user_id)
             
             session.add(mem)
-            session.commit()
+            await session.commit()
 
     @classmethod
-    def get_mem(cls, mem_id: int) -> Mem:
-        with Session(cls.__engine) as session:
-            mem = session.get(Mem, mem_id)
-            
+    async def get_mem(cls, mem_id: int) -> Mem:
+        async with cls.__async_session() as session:
+            mem = await session.get(Mem, mem_id)
+            user = await mem.awaitable_attrs.user
             return mem
 
 

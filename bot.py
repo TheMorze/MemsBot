@@ -20,7 +20,7 @@ async def main() -> None:
     style='{'
     )
     
-    Database.create_tables()
+    await Database.create_tables()
     
     bot = Bot(config.tg_bot.token, parse_mode='HTML')
     redis = Redis(host='localhost')
