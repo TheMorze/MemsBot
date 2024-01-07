@@ -1,20 +1,26 @@
 import asyncio
+import sys
+import logging
+
 from loguru import logger
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage, Redis
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
-
 from app.handlers import user_handlers
 from config import load_config
+from app.database.requests import Database
 
 
 async def main() -> None:
     config = load_config()
+    logging.basicConfig(
+    level=logging.DEBUG,
+    format='[{asctime}] #{levelname:8} {filename}:{funcName}'
+           '{lineno} - {name} - {message}',
+    style='{'
+    )
     
-    engine = create_engine(url='sqlite+pysqlite:///database.db', echo=True)
-    session = Session(engine)
+    Database.create_tables()
     
     bot = Bot(config.tg_bot.token, parse_mode='HTML')
     redis = Redis(host='localhost')
